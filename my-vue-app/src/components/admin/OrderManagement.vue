@@ -76,7 +76,7 @@ const fetchOrders = async () => {
     const response = await api.getOrders();
     orders.value = response.data;
   } catch (error) {
-    console.error("無法獲取訂單列表:", error);
+    console.error("目前無法獲取訂單列表:", error);
   }
 };
 
