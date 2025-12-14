@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'; // 引入 onMounted
 import { useRouter, useRoute } from 'vue-router'; // 引入 useRoute
+import api from '../services/api.js'; // 引入 api service
 
 const router = useRouter();
 const route = useRoute(); // 取得路由資訊
@@ -21,19 +22,21 @@ onMounted(() => {
 const handleLogin = async () => {
   errorMessage.value = '';
   try {
-    let mockResponse = {};
-    if (email.value === 'admin@rc.com' && password.value === 'admin123') {
-      mockResponse = { token: 'admin-token-123', user: { name: 'Admin User', role: 'ADMIN' } };
-    } else if (email.value === 'user@example.com' && password.value === '123456') {
-      mockResponse = { token: 'user-token-456', user: { name: '一般會員', role: 'USER' } };
-    } else {
-      throw new Error('帳號或密碼錯誤');
-    }
+    const response = await api.login({ // 使用 api.login
+      email: email.value,
+      password: password.value
+    });
 
-    const { token, user } = mockResponse;
-    localStorage.setItem('authToken', token);
+    // 假設後端回傳結構為 { id, email, name, role, ... }，若有 token 機制請依後端實作調整
+    // 這裡假設後端回傳的 User 物件就是登入成功的憑證 (Session based) 或包含 Token
+    const user = response.data; 
+    
+    // ★★★ 修正：手動設定一個 dummy token 以讓 App.vue 的 checkAuth 通過 ★★★
+    localStorage.setItem('authToken', 'session-active'); 
+
     localStorage.setItem('userRole', user.role);
     localStorage.setItem('userName', user.name);
+    localStorage.setItem('userId', user.id); 
 
     emit('login-success');
     emit('show-notification', `歡迎回來，${user.name}！`);
@@ -45,7 +48,16 @@ const handleLogin = async () => {
     }
   } catch (error) {
     console.error('登入失敗:', error);
-    errorMessage.value = error.message || '登入失敗，請稍後再試。';
+    if (error.response) {
+      // 伺服器有回傳錯誤 (4xx, 5xx)
+      errorMessage.value = `登入失敗 (${error.response.status}): ${error.response.data || error.message}`;
+    } else if (error.request) {
+      // 請求已發出但沒有回應 (Network Error)
+      errorMessage.value = '無法連接到伺服器 (Network Error)，請檢查後端是否已啟動。';
+    } else {
+      // 其他錯誤
+      errorMessage.value = `發生錯誤: ${error.message}`;
+    }
   }
 };
 </script>
@@ -56,22 +68,18 @@ const handleLogin = async () => {
     <form @submit.prevent="handleLogin" class="login-form">
       <div class="form-group">
         <label for="email">Email</label>
-        <input type="email" id="email" v-model="email" placeholder="admin@rc.com" required />
+        <input type="email" id="email" v-model="email" required />
       </div>
       <div class="form-group">
         <label for="password">密碼</label>
-        <input type="password" id="password" v-model="password" placeholder="admin123" required />
+        <input type="password" id="password" v-model="password" required />
       </div>
       <button type="submit" class="buy-btn" style="width: 100%;">登入</button>
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
       <p class="login-footer">還沒有帳號嗎？<router-link to="/register">立即註冊</router-link></p>
     </form>
     
-    <div class="dev-hint">
-      <p><strong>測試帳號：</strong></p>
-      <p>管理員: admin@rc.com / admin123</p>
-      <p>會員: user@example.com / 123456</p>
-    </div>
+    <!-- dev-hint removed -->
   </div>
 </template>
 

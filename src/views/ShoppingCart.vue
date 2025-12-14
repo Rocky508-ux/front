@@ -85,6 +85,16 @@
         </div>
         
         <div class="cart-actions">
+          <div class="address-input-group">
+            <label for="shipping-addr">收件地址：</label>
+            <input 
+              id="shipping-addr" 
+              type="text" 
+              v-model="shippingAddress" 
+              placeholder="請輸入您的收件地址..." 
+              class="addr-input"
+            />
+          </div>
           <router-link to="/" class="continue-shop-btn">← 繼續購物</router-link>
           <button @click="handleCheckout" class="checkout-btn">前往結帳</button>
         </div>
@@ -116,10 +126,11 @@ const props = defineProps({
 const emit = defineEmits(['remove-from-cart', 'require-login', 'update-quantity', 'clear-cart', 'show-notification']);
 
 const showClearModal = ref(false);
+const shippingAddress = ref('');
 
 const getProductImage = (item) => {
   // 假設加入購物車的 item 物件本身就存有圖片路徑
-  return item.image_path || 'https://via.placeholder.com/100';
+  return item.image_path || '';
 };
 
 const totalPrice = computed(() => {
@@ -147,12 +158,72 @@ const confirmClearAction = () => {
   closeClearModal();
 };
 
-const handleCheckout = () => {
-  if (props.isLoggedIn) {
-    emit('show-notification', '正在前往結帳...');
-  } else {
+import api from '../services/api.js'; // 引入 API
+import { useRouter } from 'vue-router'; // 引入 router
+
+const router = useRouter();
+
+const handleCheckout = async () => {
+  if (!props.isLoggedIn) {
     emit('show-notification', '請先登入會員，才能進行結帳。');
     emit('require-login');
+    return;
+  }
+
+  if (!shippingAddress.value.trim()) {
+    emit('show-notification', '請填寫收件地址！');
+    return;
+  }
+
+  try {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      throw new Error('無法取得使用者資訊，請重新登入。');
+    }
+
+    // 1. 準備訂單資料
+    const orderItems = props.cartItems.map(item => ({
+      productId: item.id,
+      productName: item.name,
+      quantity: item.quantity,
+      price: item.price
+    }));
+
+    // 簡單生成訂單編號: ORD-時間戳 (長度可能需注意資料庫限制 VARCHAR(50))
+    const orderId = `ORD-${Date.now()}`;
+
+    const orderData = {
+      id: orderId,
+      userId: parseInt(userId), // 確保是數字
+      totalAmount: totalPrice.value,
+      status: 'PENDING',
+      shippingAddress: shippingAddress.value,
+      items: orderItems
+    };
+
+    emit('show-notification', '正在建立訂單...');
+
+    // 2. 呼叫後端 API
+    await api.createOrder(orderData);
+
+    // 3. 成功後處理
+    emit('show-notification', '訂單建立成功！感謝您的購買。');
+    emit('clear-cart'); // 清空購物車
+    router.push('/orders'); // 導向訂單歷史頁面
+
+  } catch (error) {
+    console.error('結帳失敗:', error);
+    if (error.message === '無法取得使用者資訊，請重新登入。') {
+      emit('show-notification', '系統更新：請重新登入以獲取完整權限。');
+      emit('require-login');
+      // 清除舊的 token 避免卡死
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userId'); 
+    } else {
+      emit('show-notification', '結帳失敗，請稍後再試。');
+    }
   }
 };
 </script>
@@ -208,6 +279,9 @@ const handleCheckout = () => {
 .continue-shop-btn:hover { color: #333; border-color: #999; background-color: #f9f9f9; }
 .checkout-btn { background-color: #333; color: white; border: none; padding: 16px 50px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all 0.3s; border-radius: 4px; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
 .checkout-btn:hover { background-color: #000; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+
+.address-input-group { display: flex; align-items: center; gap: 10px; flex-grow: 1; justify-content: flex-end; }
+.addr-input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; width: 300px; font-size: 1rem; }
 
 /* ★★★ 新增：Modal 樣式 (自訂確認視窗) ★★★ */
 .confirm-overlay {

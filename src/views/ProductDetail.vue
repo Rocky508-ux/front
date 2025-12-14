@@ -3,7 +3,7 @@
     <div class="detail-layout">
       <div class="image-section">
         <div class="main-image-container">
-          <img v-if="currentImage" :src="currentImage.image_path" :alt="product.name" class="main-image" />
+          <img v-if="currentImage" :src="currentImage.imagePath" :alt="product.name" class="main-image" />
           <div v-else class="placeholder-image">暫無圖片</div>
         </div>
         
@@ -15,7 +15,7 @@
             :class="{ 'active': index === currentImageIndex }"
             @click="currentImageIndex = index"
           >
-            <img :src="img.image_path" :alt="product.name + ' 縮圖'" />
+            <img :src="img.imagePath" :alt="product.name + ' 縮圖'" />
           </div>
         </div>
       </div>
@@ -42,9 +42,9 @@
             <span class="spec-label">材質</span>
             <span class="spec-value">{{ product.material }}</span>
           </div>
-          <div class="spec-row highlight" v-if="product.estimated_arrival">
+          <div class="spec-row highlight" v-if="product.estimatedArrival">
             <span class="spec-label">預計出貨</span>
-            <span class="spec-value">{{ product.estimated_arrival }}</span>
+            <span class="spec-value">{{ product.estimatedArrival }}</span>
           </div>
         </div>
 
@@ -132,7 +132,13 @@ const fetchProduct = async (productId) => {
 const allImages = computed(() => {
   if (!product.value || !product.value.images) return [];
   // 如果後端回傳的圖片路徑是相對路徑，您可能需要在此處組合基礎 URL
-  return product.value.images;
+  return product.value.images.map(img => {
+    let path = img.imagePath;
+    if (path && !path.startsWith('http')) {
+      path = `http://localhost:8080${path}`;
+    }
+    return { ...img, imagePath: path };
+  });
 });
 
 const currentImage = computed(() => {

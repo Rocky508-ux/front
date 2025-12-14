@@ -27,13 +27,15 @@
         <input type="password" v-model="registerForm.confirmPassword" required>
       </div>
       <button type="submit">註冊</button>
-      <p class="login-footer">已有帳號？ <a @click="$emit('navigate-to-login')">立即登入</a></p>
+      <p class="login-footer">已有帳號？ <router-link to="/login">立即登入</router-link></p>
     </form>
   </div>
 </template>
 
 <script setup>
 import { reactive } from 'vue';
+import api from '../services/api.js'; // 引入 api service
+import { useRouter } from 'vue-router'; // 引入 useRouter
 
 // ★★★ 修改：加入 'show-notification' ★★★
 const emit = defineEmits(['navigate-to-login', 'registration-notification', 'show-notification']);
@@ -47,14 +49,35 @@ const registerForm = reactive({
   confirmPassword: ''
 });
 
-function register() {
+const router = useRouter(); // 初始化 router
+
+async function register() {
   if (registerForm.password !== registerForm.confirmPassword) {
-    // ★★★ 修改：用 show-notification 取代 alert ★★★
     emit('show-notification', '密碼不一致！');
     return;
   }
-  emit('registration-notification', '註冊功能需串接後端 API');
-  emit('navigate-to-login');
+
+  try {
+    // 呼叫後端註冊 API
+    // 注意：後端 User Model 欄位需要與這裡匹配 (例如 name, email, password 等)
+    await api.register({
+      name: registerForm.name,
+      email: registerForm.email,
+      phone: registerForm.phone,
+      birthday: registerForm.birthday, // 確保格式為 YYYY-MM-DD，HTML date input 預設即為此格式
+      password: registerForm.password,
+      role: 'USER', // 預設註冊為普通會員
+      status: 'ACTIVE' // 預設狀態
+    });
+
+    emit('show-notification', '註冊成功！請登入');
+    router.push('/login'); // 註冊成功後導向登入頁
+  } catch (error) {
+    console.error('註冊失敗:', error);
+    // 如果後端回傳錯誤訊息，顯示出來
+    const msg = error.response?.data?.message || '註冊失敗，請稍後再試。';
+    emit('show-notification', msg);
+  }
 }
 </script>
 

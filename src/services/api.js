@@ -2,28 +2,31 @@ import axios from 'axios';
 
 // 建立一個 Axios instance，用於向後端 API 發送請求
 const apiClient = axios.create({
-  // 我們假設後端 API 的基礎 URL 為 http://localhost:3000/api
+  // 我們假設後端 API 的基礎 URL 為 http://localhost:8080/api
   // 當您完成後端開發後，請確保此 URL 是正確的
-  baseURL: 'http://localhost:3000/api', 
+  baseURL: 'http://localhost:8080/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 // ===============================================
-//                  使用者 (Users) API
+//                  認證與使用者 (Auth & Users) API
 // ===============================================
 
-// 獲取所有使用者
-export const getUsers = () => apiClient.get('/users');
+// 登入
+export const login = (credentials) => apiClient.post('/auth/login', credentials);
+// 註冊
+export const register = (userData) => apiClient.post('/auth/register', userData);
+
+// 獲取所有使用者 (Backend Path: /api/auth/users)
+export const getUsers = () => apiClient.get('/auth/users');
 // 根據 ID 獲取單一使用者
-export const getUser = (id) => apiClient.get(`/users/${id}`);
-// 創建新使用者
-export const createUser = (data) => apiClient.post('/users', data);
+export const getUser = (id) => apiClient.get(`/auth/users/${id}`);
 // 更新使用者資料
-export const updateUser = (id, data) => apiClient.put(`/users/${id}`, data);
+export const updateUser = (id, data) => apiClient.put(`/auth/users/${id}`, data);
 // 刪除使用者
-export const deleteUser = (id) => apiClient.delete(`/users/${id}`);
+export const deleteUser = (id) => apiClient.delete(`/auth/users/${id}`);
 
 // ===============================================
 //                  產品 (Products) API
@@ -47,7 +50,8 @@ export const deleteProduct = (id) => apiClient.delete(`/products/${id}`);
 // 獲取所有訂單
 export const getOrders = () => apiClient.get('/orders');
 // 根據 ID 獲取單一訂單（假設會一併返回 orders_items）
-export const getOrder = (id) => apiClient.get(`/orders/${id}`);
+// 根據 User ID 獲取訂單
+export const getUserOrders = (userId) => apiClient.get(`/orders/user/${userId}`);
 // 創建新訂單
 export const createOrder = (data) => apiClient.post('/orders', data);
 // 更新訂單資料 (例如更新狀態)
@@ -57,9 +61,10 @@ export const updateOrder = (id, data) => apiClient.put(`/orders/${id}`, data);
 
 // 為了方便，我們將 apiClient 也匯出，以便在需要時可以直接使用
 export default {
+  login,
+  register,
   getUsers,
   getUser,
-  createUser,
   updateUser,
   deleteUser,
   getProducts,
@@ -68,7 +73,7 @@ export default {
   updateProduct,
   deleteProduct,
   getOrders,
-  getOrder,
   createOrder,
   updateOrder,
+  getUserOrders,
 };

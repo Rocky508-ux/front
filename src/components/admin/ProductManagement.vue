@@ -172,7 +172,7 @@ onMounted(fetchProducts);
 // 輔助函式：取得主圖 (假設 API 回傳的 product 物件中直接包含主圖路徑)
 const getProductMainImage = (product) => {
   // 優先使用 product.main_image_url，如果沒有，則使用 product.image_path，最後是佔位圖
-  return product.main_image_url || product.image_path || 'https://via.placeholder.com/50';
+  return product.main_image_url || product.image_path || '';
 };
 
 const getTagClass = (tag) => {

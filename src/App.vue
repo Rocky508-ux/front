@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router';
 import ToastNotification from './components/ToastNotification.vue';
 import SearchBar from './components/SearchBar.vue';
@@ -24,12 +24,23 @@ const isContactActive = computed(() => route.path === '/contact');
 function checkAuth() {
   const token = localStorage.getItem('authToken');
   const role = localStorage.getItem('userRole');
+  console.log('App checkAuth:', { token, role }); // ★★★ Debug Log ★★★
   
   isLoggedIn.value = !!token;
-  isAdmin.value = role === 'ADMIN';
+  // ★★★ 修正：只有在已登入的情況下，才檢查是否為 ADMIN ★★★
+  isAdmin.value = isLoggedIn.value && role === 'ADMIN';
 }
 
+
+// ... (略)
+
 onMounted(() => {
+  checkAuth();
+});
+
+// ★★★ 新增：監聽路由變化，自動檢查登入狀態 ★★★
+// 這樣可以確保即使 emit 丟失，換頁時也會自動更新 UI
+watch(() => route.path, () => {
   checkAuth();
 });
 

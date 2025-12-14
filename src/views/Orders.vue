@@ -6,14 +6,14 @@
         <div class="order-header">
           <div>
             <h3>訂單編號: {{ order.id }}</h3>
-            <p class="order-date">{{ order.date }}</p>
+            <p class="order-date">{{ order.orderDate || order.date }}</p>
           </div>
           <span class="order-status" :class="getStatusClass(order.status)">
             {{ order.status }}
           </span>
         </div>
         <div class="order-total">
-          總金額: <strong>NT$ {{ order.amount.toLocaleString() }}</strong>
+          總金額: <strong>NT$ {{ (order.totalAmount || order.amount || 0).toLocaleString() }}</strong>
         </div>
       </div>
       <div v-if="!orders || orders.length === 0" style="text-align: center; padding: 20px; color: #666;">
@@ -31,10 +31,13 @@ const orders = ref([]);
 
 onMounted(async () => {
   try {
-    const response = await api.getOrders();
-    // 在真實應用中，這裡應該是獲取當前登入用戶的訂單
-    // 例如: const response = await api.getMyOrders();
-    // 但目前我們先獲取所有訂單作為示範
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      console.warn("未登入，無法獲取訂單");
+      return;
+    }
+    // 改用 getUserOrders 獲取特定用戶訂單
+    const response = await api.getUserOrders(userId);
     orders.value = response.data;
   } catch (error) {
     console.error("無法獲取訂單列表:", error);

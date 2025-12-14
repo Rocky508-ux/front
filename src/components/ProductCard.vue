@@ -48,9 +48,21 @@ defineEmits(['add-to-cart']);
 const router = useRouter();
 
 const mainImage = computed(() => {
-  // 假設從 API 獲取的 product 物件會直接包含主圖的路徑
-  // 例如：product.image_path 或 product.main_image_url
-  return props.product.image_path || null;
+  // 後端回傳的 Product 物件包含 images 陣列 (Set<ProductImage>)
+  // 每個 image 物件有 imagePath 和 isMain 屬性
+  if (!props.product.images || props.product.images.length === 0) {
+    return null;
+  }
+  
+  // 優先找 isMain 為 true 的圖片
+  const main = props.product.images.find(img => img.isMain);
+  let path = main ? main.imagePath : props.product.images[0].imagePath;
+  
+  // 修正：如果路徑只有 /image/xxx，補上後端網址
+  if (path && !path.startsWith('http')) {
+      return `http://localhost:8080${path}`;
+  }
+  return path;
 });
 
 const goToDetail = () => {
