@@ -11,7 +11,12 @@ const route = useRoute();
 const isLoggedIn = ref(false);
 const isAdmin = ref(false);
 const notifications = ref([]);
-const cartItems = ref([]);
+const cartItems = ref(JSON.parse(localStorage.getItem('cartItems') || '[]'));
+
+// 監聽購物車變化，自動存入 LocalStorage
+watch(cartItems, (newVal) => {
+  localStorage.setItem('cartItems', JSON.stringify(newVal));
+}, { deep: true });
 
 // 導航列 Active 狀態
 const isPreorderActive = computed(() => route.fullPath === '/?tag=預購');

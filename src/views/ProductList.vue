@@ -29,7 +29,8 @@ import { useRoute, useRouter } from 'vue-router';
 import ProductCard from '../components/ProductCard.vue';
 import api from '../services/api.js';
 
-defineEmits(['add-to-cart']);
+const props = defineProps(['isLoggedIn', 'cartItems']);
+defineEmits(['add-to-cart', 'login-success', 'registration-notification', 'update-quantity', 'remove-from-cart', 'clear-cart', 'show-notification', 'require-login']);
 
 const route = useRoute();
 const router = useRouter();

@@ -109,9 +109,11 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  isLoggedIn: Boolean, 
+  cartItems: Array
 });
 
-defineEmits(['add-to-cart']);
+defineEmits(['add-to-cart', 'login-success', 'registration-notification', 'update-quantity', 'remove-from-cart', 'clear-cart', 'show-notification', 'require-login']);
 
 const product = ref(null);
 const currentImageIndex = ref(0);
