@@ -17,11 +17,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="user in users" :key="user.id">
+          <tr v-for="user in filteredUsers" :key="user.id">
             <td>{{ user.id }}</td>
             <td>{{ user.name }}</td>
             <td>{{ user.email }}</td>
-            <td>{{ user.registeredDate }}</td>
+            <td>{{ user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A' }}</td>
             <td>
               <span :class="['status-badge', user.status]">{{ user.status === 'active' ? '啟用中' : '已停用' }}</span>
             </td>
@@ -53,10 +53,7 @@
             <label for="userEmail">Email:</label>
             <input type="email" id="userEmail" v-model="editedUser.email" required />
           </div>
-          <div class="form-group">
-            <label for="registeredDate">註冊日期:</label>
-            <input type="date" id="registeredDate" v-model="editedUser.registeredDate" required />
-          </div>
+          <!-- 註冊日期自動產生，無需手動輸入 -->
           <div class="modal-actions">
             <button type="button" class="admin-btn cancel-btn" @click="closeModal">取消</button>
             <button type="submit" class="admin-btn save-btn">儲存</button>
@@ -104,7 +101,27 @@ import { ref, reactive, onMounted } from 'vue';
 import api from '../../services/api.js';
 
 const users = ref([]);
-const showModal = ref(false);
+const filteredUsers = ref([]); // Store filtered users
+
+// ...
+
+const fetchUsers = async () => {
+  try {
+    const response = await api.getUsers();
+    users.value = response.data;
+    
+    // Filter out current user
+    const currentUserId = parseInt(localStorage.getItem('userId'), 10);
+    if (!isNaN(currentUserId)) {
+      filteredUsers.value = users.value.filter(u => u.id !== currentUserId);
+    } else {
+      filteredUsers.value = users.value;
+    }
+  } catch (error) {
+    console.error("無法獲取用戶列表:", error);
+  }
+};
+const showModal = ref(false); // Add showModal ref
 const isEditMode = ref(false);
 
 const editedUser = reactive({
@@ -115,15 +132,7 @@ const showHistoryModal = ref(false);
 const selectedUser = ref(null);
 const userOrders = ref([]); // 改為 ref
 
-// 獲取所有用戶
-const fetchUsers = async () => {
-  try {
-    const response = await api.getUsers();
-    users.value = response.data;
-  } catch (error) {
-    console.error("無法獲取用戶列表:", error);
-  }
-};
+// fetchUsers is already defined above
 
 onMounted(fetchUsers);
 
@@ -133,8 +142,8 @@ const openAddModal = () => {
     id: null,
     name: '',
     email: '',
-    // 後端應自動處理註冊日期
-    registeredDate: new Date().toISOString().slice(0, 10),
+    // password 欄位需要在 UI 上新增，這裡暫時省略，後端可能會給預設值或前端需加
+    // registeredDate: new Date().toISOString().slice(0, 10), // 移除：後端會自動產生 createdAt
     status: 'active'
   });
   showModal.value = true;
@@ -152,13 +161,19 @@ const saveUser = async () => {
     if (isEditMode.value) {
       await api.updateUser(dataToSend.id, dataToSend);
     } else {
-      delete dataToSend.id; // 新增時移除 id
+      // Create logic needs password. For now, assuming backend handles or we add input later.
+      // But standard register requires password.
+      // For Admin generic add, maybe set default?
+      if (!dataToSend.password) dataToSend.password = "123456"; // Default for admin-created users
+      
+      delete dataToSend.id; 
       await api.createUser(dataToSend);
     }
     closeModal();
     await fetchUsers();
   } catch (error) {
     console.error("儲存用戶失敗:", error);
+    alert("儲存失敗: " + (error.response?.data || error.message));
   }
 };
 
@@ -169,6 +184,7 @@ const deleteUser = async (userId) => {
       await fetchUsers();
     } catch (error) {
       console.error("刪除用戶失敗:", error);
+      alert("刪除失敗: " + (error.response?.data || error.message));
     }
   }
 };
@@ -192,13 +208,17 @@ const toggleStatus = async (user) => {
 const viewPurchaseHistory = async (user) => {
   selectedUser.value = user;
   showHistoryModal.value = true;
-  userOrders.value = []; // 先清空
+  userOrders.value = []; 
   try {
-    // 理想情況下, 應有 api.getUserOrders(user.id)
-    const response = await api.getOrders();
-    userOrders.value = response.data.filter(order => order.userId === user.id);
+    // FIX: 使用正確的 getUserOrders API
+    const response = await api.getUserOrders(user.id);
+    userOrders.value = response.data;
   } catch (error) {
     console.error("獲取用戶訂單失敗:", error);
+    // 404 對於該 API 可能表示沒訂單，不應報錯
+    if (error.response && error.response.status === 404) {
+      userOrders.value = [];
+    }
   }
 };
 

@@ -18,9 +18,9 @@
         <tbody>
           <tr v-for="order in orders" :key="order.id">
             <td>{{ order.id }}</td>
-            <td>{{ order.customer }}</td>
-            <td>{{ order.date }}</td>
-            <td>NT$ {{ order.amount.toLocaleString() }}</td>
+            <td>User ID: {{ order.userId }}</td>
+            <td>{{ order.orderDate ? new Date(order.orderDate).toLocaleString() : '' }}</td>
+            <td>NT$ {{ order.totalAmount?.toLocaleString() }}</td>
             <td>
               <select v-model="order.status" @change="updateStatus(order)" class="styled-select">
                 <option value="處理中">處理中</option>
@@ -44,9 +44,9 @@
       <div class="modal-content">
         <h2>訂單詳情 #{{ selectedOrder?.id }}</h2>
         <div class="order-details">
-          <p><strong>顧客:</strong> {{ selectedOrder?.customer }}</p>
-          <p><strong>日期:</strong> {{ selectedOrder?.date }}</p>
-          <p><strong>總金額:</strong> NT$ {{ selectedOrder?.amount.toLocaleString() }}</p>
+          <p><strong>User ID:</strong> {{ selectedOrder?.userId }}</p>
+          <p><strong>日期:</strong> {{ selectedOrder?.orderDate ? new Date(selectedOrder.orderDate).toLocaleString() : '' }}</p>
+          <p><strong>總金額:</strong> NT$ {{ selectedOrder?.totalAmount?.toLocaleString() }}</p>
           <p><strong>狀態:</strong> <span :class="['status-badge', selectedOrder?.status]">{{ selectedOrder?.status }}</span></p>
           <h3>訂購商品:</h3>
           <ul class="order-items-list">
@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onActivated } from 'vue';
 import api from '../../services/api.js';
 
 const orders = ref([]);
@@ -74,6 +74,7 @@ const selectedOrder = ref(null);
 const fetchOrders = async () => {
   try {
     const response = await api.getOrders();
+    console.log("Admin Orders Response:", response.data); // Debug log
     orders.value = response.data;
   } catch (error) {
     console.error("目前無法獲取訂單列表:", error);
@@ -81,26 +82,28 @@ const fetchOrders = async () => {
 };
 
 onMounted(fetchOrders);
+// 因為 Admin.vue 使用了 keep-alive，所以切換回來時要用 onActivated 重新抓取資料
+onActivated(fetchOrders);
+
+// 狀態現在直接儲存中文，無需映射
+const formatStatus = (status) => status;
+
+// ... existing code ...
 
 const updateStatus = async (order) => {
   try {
-    // 假設 api.js 中有 updateOrder 方法
-    // 我們只發送需要更新的 status 欄位
     await api.updateOrder(order.id, { status: order.status });
-    // 可以選擇性地顯示成功訊息
     console.log(`訂單 ${order.id} 狀態已更新為 ${order.status}`);
-    // 無需重新 fetchOrders，因為我們是直接修改 orders ref 內的物件，UI 會自動更新
+    alert("狀態更新成功！");
   } catch (error) {
     console.error(`更新訂單 ${order.id} 失敗:`, error);
-    // 如果更新失敗，最好是將狀態還原，並提示使用者
     alert("更新失敗，請稍後再試");
-    fetchOrders(); // 或者重新拉取一次列表以確保資料同步
+    fetchOrders(); 
   }
 };
 
 const viewOrder = (order) => {
-  // 為了看到詳細的訂購商品，我們假設 getOrders 回傳的資料已包含 items
-  // 如果沒有，則應在此處呼叫 api.getOrder(order.id)
+  console.log("Viewing order:", order);
   selectedOrder.value = order;
   showDetailModal.value = true;
 };

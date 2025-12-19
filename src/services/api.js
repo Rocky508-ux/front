@@ -10,6 +10,17 @@ const apiClient = axios.create({
   },
 });
 
+// ★★★ 新增：請求攔截器，自動掛載 Token ★★★
+apiClient.interceptors.request.use(config => {
+  const token = localStorage.getItem('authToken');
+  if (token && token.startsWith('ey')) { // 簡單判斷這是不是一個 JWT 字串
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
 // ===============================================
 //                  認證與使用者 (Auth & Users) API
 // ===============================================
@@ -19,51 +30,54 @@ export const login = (credentials) => apiClient.post('/auth/login', credentials)
 // 註冊
 export const register = (userData) => apiClient.post('/auth/register', userData);
 
-// 獲取所有使用者 (Backend Path: /api/auth/users)
-export const getUsers = () => apiClient.get('/auth/users');
+// 獲取所有使用者 (Backend Path: /api/admin/users)
+export const getUsers = () => apiClient.get('/admin/users');
+// 創建新使用者 (Backend Path: /api/admin/users)
+export const createUser = (data) => apiClient.post('/admin/users', data);
 // 根據 ID 獲取單一使用者
-export const getUser = (id) => apiClient.get(`/auth/users/${id}`);
+export const getUser = (id) => apiClient.get(`/admin/users/${id}`);
 // 更新使用者資料
-export const updateUser = (id, data) => apiClient.put(`/auth/users/${id}`, data);
+export const updateUser = (id, data) => apiClient.put(`/admin/users/${id}`, data);
 // 刪除使用者
-export const deleteUser = (id) => apiClient.delete(`/auth/users/${id}`);
+export const deleteUser = (id) => apiClient.delete(`/admin/users/${id}`);
 
 // ===============================================
 //                  產品 (Products) API
 // ===============================================
 
-// 獲取所有產品
+// 獲取所有產品 (Public)
 export const getProducts = () => apiClient.get('/products');
-// 根據 ID 獲取單一產品（假設會一併返回 product_images）
+// 根據 ID 獲取單一產品 (Public)
 export const getProduct = (id) => apiClient.get(`/products/${id}`);
-// 創建新產品
-export const createProduct = (data) => apiClient.post('/products', data);
-// 更新產品資料
-export const updateProduct = (id, data) => apiClient.put(`/products/${id}`, data);
-// 刪除產品
-export const deleteProduct = (id) => apiClient.delete(`/products/${id}`);
+
+// [ADMIN] 創建新產品
+export const createProduct = (data) => apiClient.post('/admin/products', data);
+// [ADMIN] 更新產品資料
+export const updateProduct = (id, data) => apiClient.put(`/admin/products/${id}`, data);
+// [ADMIN] 刪除產品
+export const deleteProduct = (id) => apiClient.delete(`/admin/products/${id}`);
 
 // ===============================================
 //                  訂單 (Orders) API
 // ===============================================
 
-// 獲取所有訂單
-export const getOrders = () => apiClient.get('/orders');
-// 根據 ID 獲取單一訂單（假設會一併返回 orders_items）
-// 根據 User ID 獲取訂單
+// [ADMIN] 獲取所有訂單
+export const getOrders = () => apiClient.get('/admin/orders');
+
+// 根據 User ID 獲取訂單 (Public/User)
 export const getUserOrders = (userId) => apiClient.get(`/orders/user/${userId}`);
-// 創建新訂單
+// 創建新訂單 (User)
 export const createOrder = (data) => apiClient.post('/orders', data);
-// 更新訂單資料 (例如更新狀態)
-export const updateOrder = (id, data) => apiClient.put(`/orders/${id}`, data);
-// (根據需求可以添加更新和刪除訂單的 API)
 
+// [ADMIN] 更新訂單狀態
+export const updateOrder = (id, data) => apiClient.put(`/admin/orders/${id}`, data);
 
-// 為了方便，我們將 apiClient 也匯出，以便在需要時可以直接使用
+// 匯出
 export default {
   login,
   register,
   getUsers,
+  createUser, // Added missing export if needed
   getUser,
   updateUser,
   deleteUser,

@@ -46,6 +46,7 @@ const onSearch = () => {
 .search-bar button {
   padding: 12px 20px;
   font-size: 16px;
+  line-height: 16px;
   font-weight: 700;
   border-radius: 6px;
   border: 1px solid #4285F4;

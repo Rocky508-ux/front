@@ -27,19 +27,19 @@ const handleLogin = async () => {
       password: password.value
     });
 
-    // 假設後端回傳結構為 { id, email, name, role, ... }，若有 token 機制請依後端實作調整
-    // 這裡假設後端回傳的 User 物件就是登入成功的憑證 (Session based) 或包含 Token
-    const user = response.data; 
+    // 3. 從後端取得 Token 與使用者資訊
+    const { token, user } = response.data;
     
-    // ★★★ 修正：手動設定一個 dummy token 以讓 App.vue 的 checkAuth 通過 ★★★
-    localStorage.setItem('authToken', 'session-active'); 
-
+    // 4. 儲存 JWT Token (取代原本的 dummy token)
+    localStorage.setItem('authToken', token); 
+    
+    // 5. 儲存使用者資訊
     localStorage.setItem('userRole', user.role);
     localStorage.setItem('userName', user.name);
     localStorage.setItem('userId', user.id); 
 
     emit('login-success');
-    emit('show-notification', `歡迎回來，${user.name}！`);
+    emit('show-notification', `歡迎回來，${user.name}！(已啟用 JWT 安全驗證)`);
 
     if (user.role === 'ADMIN') {
       router.push('/admin');
