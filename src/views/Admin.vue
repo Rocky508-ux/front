@@ -51,7 +51,7 @@
           </div>
         </div>
         <keep-alive>
-            <component :is="activeViewComponent" :key="activeSection" v-if="activeSection !== 'dashboard'" />
+            <component :is="activeViewComponent" v-if="activeSection !== 'dashboard'" />
         </keep-alive>
       </div>
     </main>
@@ -107,6 +107,7 @@ const recentOrders = computed(() => [...orders.value].sort((a, b) => new Date(b.
 const totalOrdersCount = computed(() => orders.value.length.toLocaleString());
 
 const showSection = (section) => {
+  console.log("Navigating to section:", section);
   activeSection.value = section;
   if (window.innerWidth <= 768) isSidebarOpen.value = false;
 };
